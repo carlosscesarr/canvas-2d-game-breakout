@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+    	* { padding: 0; margin: 0; }
+        canvas { background: #eee; display: block; margin: 0 auto; }
+        #coordinates{margin: 0 auto; text-align: center;}
+    </style>
+</head>
+<body>
+    <h2 id="coordinates"></h2>
+    <canvas id="myCanvas" width="480" height="320"></canvas>
+    <script>
+        var canvas = document.getElementById('myCanvas');
+        var coordinates = document.getElementById('coordinates');
+        var ctx = canvas.getContext("2d");
+
+        var heigthCanvas = canvas.height;
+        var widthCanvas = canvas.width;
+        var positionBallX = canvas.width / 2;
+        var positionBallY = canvas.height - 200;
+        var dx = -2; 
+        var dy = 2;
+        var speedRatioBall = 0.5
+
+        var ballRadius = 10;
+        var ballAdjustColisaoRario = 0.5;
+
+        var heightRacket = 10;
+        var widthRacket = 75;
+        var positionRacketX = (widthCanvas - widthRacket) /2;
+        var positionRacketY = (canvas.height - heightRacket);
+        var racketSpeed = 4;
+
+        var keyRightPressed = false;
+        var keyLeftPressed = false;
+
+        var pausedGame = false;
+        var gameOver = false;
+        var stopBall = false;
+
+        var qtdLinhasObstaculos = 4;
+        var qtdColunasObstaculos = 13;
+        var tamanhoObstaculo = 30;
+        var alturaObstaculo = 10;
+        var espacoObstaculo = 5;
+        var marginTopObstaculos = 15;
+        var marginTopoObstaculo = 15;
+        var marginEsquerdaObstaculo = 15;
+
+        var score = 0;
+
+        var obstaculos = [];
+        for(var c=0; c<qtdColunasObstaculos; c++) {
+            obstaculos[c] = [];
+            for(var r=0; r<qtdLinhasObstaculos; r++) {
+                obstaculos[c][r] = { x: 0, y: 0, status: 1 };
+            }
+        }
+
+        document.addEventListener("keydown", pressionandoTecla, false);
+        document.addEventListener("keyup", soltandoTecla, false);
+
+        function pressionandoTecla(e) {
+            if(e.key == "Right" || e.key == "ArrowRight") {
+                keyRightPressed = true;
+            }
+            else if(e.key == "Left" || e.key == "ArrowLeft") {
+                keyLeftPressed = true;
+            }  else if (e.key == "Shift") {
+                pausedGame = !pausedGame;
+            }
+        }
+
+        function soltandoTecla(e) {
+            if(e.key == "Right" || e.key == "ArrowRight") {
+                keyRightPressed = false;
+            }
+            else if(e.key == "Left" || e.key == "ArrowLeft") {
+                keyLeftPressed = false;
+            }
+
+            if (e.key == "Up" || e.key == "ArrowUp") {
+                dx = (dx < 0) ? dx - speedRatioBall : dx + speedRatioBall;
+                dy = (dy < 0) ? dy - speedRatioBall : dy + speedRatioBall;
+            }
+
+            if (e.key == "Down" || e.key == "ArrowDown") {
+                dx = (dx < 0) ? dx + speedRatioBall : dx - speedRatioBall;
+                dy = (dy < 0) ? dy + speedRatioBall : dy - speedRatioBall;
+            }
+        }
+
+        function drawBall() { 
+            ctx.beginPath(); 
+            ctx.arc (positionBallX, positionBallY, ballRadius, 0, Math.PI * 2); 
+            ctx.fillStyle = "#0095DD"; 
+            ctx.fill (); 
+            ctx.closePath(); 
+        }
+
+        function desenharRaquete() {
+            ctx.beginPath();
+            ctx.rect(positionRacketX, positionRacketY, widthRacket, heightRacket);
+            ctx.fillStyle = '#0095DD';
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function desenharObstaculos() {
+            for(var c=0; c<qtdColunasObstaculos; c++) {
+                for(var r=0; r<qtdLinhasObstaculos; r++) {
+                    if (obstaculos[c][r].status == 1) {
+                        var posicaoObstaculoY = (c*(tamanhoObstaculo+espacoObstaculo))+marginEsquerdaObstaculo;
+                        var posicaoObstaculoX = (r*(alturaObstaculo+espacoObstaculo))+marginTopoObstaculo + marginTopObstaculos;
+                        obstaculos[c][r].x = posicaoObstaculoY;
+                        obstaculos[c][r].y = posicaoObstaculoX;
+                        ctx.beginPath();
+                        ctx.rect(posicaoObstaculoY, posicaoObstaculoX, tamanhoObstaculo, alturaObstaculo);
+                        ctx.fillStyle = "#0095DD";
+                        ctx.fill();
+                        ctx.closePath();
+                    }
+                }
+            }        
+        }
+
+        function collisionDetection() {
+            for (var c = 0; c < qtdColunasObstaculos; c++) {
+                for (var r = 0; r < qtdLinhasObstaculos; r++) {
+                    var b = obstaculos[c][r];
+                    if (b.status == 1) {
+                        if (positionBallX > b.x && positionBallX < b.x + tamanhoObstaculo && positionBallY > b.y && positionBallY < b.y + alturaObstaculo) {
+                            dy = -dy;
+                            b.status = 0;
+                            score++;    
+                            if (score == qtdLinhasObstaculos*qtdColunasObstaculos) {
+                                alert("Você ganhou, parabéns!");
+                                document.location.reload();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawScore() {
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "#0095DD";
+            ctx.fillText("score: "+score, 8, 20);
+        }
+
+        function draw() {
+            
+            if (!pausedGame) {
+                ctx.clearRect(0,0, widthCanvas, heigthCanvas);
+                desenharObstaculos();
+                drawBall();
+                desenharRaquete();
+                collisionDetection();
+                drawScore();
+    
+                //Verificando a colisão na borda superior | inferior do canvas
+                if (positionBallY + dy < (ballRadius + ballAdjustColisaoRario)) {
+                    dy = -dy;
+                } 
+                else if ( positionBallY + dy + heightRacket > heigthCanvas - (ballRadius + ballAdjustColisaoRario)) {
+                    //Verificando se a bola toca na raquete
+
+                    if (positionBallX > positionRacketX && positionBallX < (positionRacketX + widthRacket) &&
+                    positionBallY + dy + ((heightRacket/2)+ballAdjustColisaoRario) > heigthCanvas - (ballRadius + ballAdjustColisaoRario)
+                     ) {
+                        dy = -dy;
+                     } else if(positionBallY + dy > heigthCanvas - (ballRadius - ballAdjustColisaoRario)) {
+                        dy = -dy;
+                        //Nessa condição a bolinha tocou a borda inferior do canvas, gameover
+                        gameOver = true;
+                        alert("Game Over");
+                        window.location.reload();
+                     }
+                    
+                }
+    
+                //Verificando a colisão da borda direira | esquerda do canvas
+                if (positionBallX + dx < (ballRadius + ballAdjustColisaoRario) || 
+                    positionBallX + dx > canvas.width - (ballRadius + ballAdjustColisaoRario)) {
+                    dx = -dx;
+                }
+                
+                //Implementando a movimentação da raquete
+                if (keyRightPressed) {
+                    positionRacketX = (positionRacketX + widthRacket >= widthCanvas) 
+                                      ? widthCanvas - widthRacket 
+                                      : positionRacketX += racketSpeed;
+                                      
+                } else if (keyLeftPressed) {
+                    positionRacketX = (positionRacketX <= 0) ? 0 : positionRacketX -= racketSpeed;
+                }
+
+                //implementando o game over do jogo
+                
+                if (!stopBall) {
+                    positionBallX += dx;
+                    positionBallY += dy;
+                }
+                
+                let h1 =  `canvas heigth: ${heigthCanvas} canvas width: ${widthCanvas}
+                            BallX: ${positionBallX} | DirectionX: ${dx}
+                            BallY: ${positionBallY} | DirectionY: ${dy}
+                            RacketX: ${positionRacketX} y: ${positionRacketY} | Width ${widthRacket} | Height ${heightRacket} 
+                            `;
+                h1 += gameOver ? 'GAME OVER' : '';
+                coordinates.innerText = h1;
+            
+            }
+
+        requestAnimationFrame(draw);
+        }
+        draw();
+    </script>
+</body>
+</html>
